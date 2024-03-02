@@ -93,3 +93,22 @@ class SelfAttention(nn.Module):
         attention = attention.reshape(B, -1, self.embed_dim)
 
         return self.fc_out(attention)
+
+
+class TransformerBlock(nn.Module):
+    def __init__(self, embed_dim: int, heads: int, expand: int):
+        super(TransformerBlock, self).__init__()
+        self.embed_dim = embed_dim
+        self.heads = heads
+        
+        # First layer 
+        self.attn = SelfAttention(heads=self.heads, embed_dim=self.embed_dim)
+        self.layernorm1 = nn.LayerNorm(self.embed_dim)
+        
+        # Second Layer
+        self.feed_forwad = nn.Sequential(
+            nn.Linear(self.embed_dim, self.embed_dim * expand),
+            nn.Linear(self.embed_dim * expand, self.embed_dim),
+        )
+        self.layernorm2 = nn.LayerNorm(self.embed_dim)
+
