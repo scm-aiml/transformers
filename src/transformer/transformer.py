@@ -61,11 +61,7 @@ class SelfAttention(nn.Module):
 
         # Get input shapes
         B = queries.shape[0]  # Batch size
-        v_len, k_len, q_len = (
-            torch.tensor(values.shape[1]),
-            torch.tensor(keys.shape[1]),
-            torch.tensor(queries.shape[1]),
-        )  # Sequence lengths
+        k_len = torch.tensor(keys.shape[1])
 
         # Project
         keys = self.keys_proj(keys)
@@ -73,9 +69,9 @@ class SelfAttention(nn.Module):
         queries = self.queries_proj(queries)
 
         # Reshape
-        values = values.reshape(B, v_len, self.heads, self.head_dim)
-        keys = keys.reshape(B, k_len, self.heads, self.head_dim)
-        queries = queries.reshape(B, q_len, self.heads, self.head_dim)
+        values = values.reshape(B, -1, self.heads, self.head_dim)
+        keys = keys.reshape(B, -1, self.heads, self.head_dim)
+        queries = queries.reshape(B, -1, self.heads, self.head_dim)
 
         # Perform multi-head attention
         energy = torch.einsum(
@@ -93,6 +89,6 @@ class SelfAttention(nn.Module):
             "bhqk,bvhd->bqhd", energy, values
         )  # Output shape (B, q_len, heads, head_dim)
 
-        attention = attention.reshape(B, q_len, self.embed_dim)
+        attention = attention.reshape(B, -1, self.embed_dim)
 
         return attention
