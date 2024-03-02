@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class SelfAttention(nn.Module):
-    def __init__(self, embed_dim: int, heads: int):
+    def __init__(self, embed_dim: int, heads: int, bias: bool = False):
         """Implement a Multi-Headed self attention block
 
         :param embed_dim: Input dimensions
@@ -20,9 +20,10 @@ class SelfAttention(nn.Module):
             self.embed_dim % self.head_dim == 0
         ), "Embed size must be evenly divisible by heads"
 
-        self.values_proj = torch.nn.Linear(self.embed_dim, self.embed_dim)
-        self.keys_proj = torch.nn.Linear(self.embed_dim, self.embed_dim)
-        self.queries_proj = torch.nn.Linear(self.embed_dim, self.embed_dim)
+        self.values_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=bias)
+        self.keys_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=bias)
+        self.queries_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=bias)
+        self.fc_out = nn.Linear(self.embed_dim, self.embed_dim)
 
     def forward(
         self,
@@ -91,4 +92,4 @@ class SelfAttention(nn.Module):
 
         attention = attention.reshape(B, -1, self.embed_dim)
 
-        return attention
+        return self.fc_out(attention)
