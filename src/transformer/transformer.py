@@ -1,27 +1,28 @@
 import torch
+import torch.nn as nn
 
 
-class SelfAttention(torch.nn.Module):
-    def __init__(self, embed_size: int, heads: int):
+class SelfAttention(nn.Module):
+    def __init__(self, embed_dim: int, heads: int):
         """Implement a Multi-Headed self attention block
 
-        :param embed_size: Input dimensions
-        :type embed_size: int
+        :param embed_dim: Input dimensions
+        :type embed_dim: int
         :param heads: Number of heads
         :type heads: int
         """
         super(SelfAttention, self).__init__()
-        self.embed_size = embed_size
+        self.embed_dim = embed_dim
         self.heads = heads
-        self.head_dim = self.embed_size // self.heads
+        self.head_dim = self.embed_dim // self.heads
 
         assert (
-            self.embed_size % self.head_dim == 0
+            self.embed_dim % self.head_dim == 0
         ), "Embed size must be evenly divisible by heads"
 
-        self.values_proj = torch.nn.Linear(self.embed_size, self.embed_size)
-        self.keys_proj = torch.nn.Linear(self.embed_size, self.embed_size)
-        self.queries_proj = torch.nn.Linear(self.embed_size, self.embed_size)
+        self.values_proj = torch.nn.Linear(self.embed_dim, self.embed_dim)
+        self.keys_proj = torch.nn.Linear(self.embed_dim, self.embed_dim)
+        self.queries_proj = torch.nn.Linear(self.embed_dim, self.embed_dim)
 
     def forward(
         self,
@@ -30,21 +31,41 @@ class SelfAttention(torch.nn.Module):
         queries: torch.Tensor,
         mask: torch.Tensor = None,
     ) -> torch.Tensor:
+        """_summary_
+
+        :param values: Values tensor
+        :type values: torch.Tensor
+        :param keys: Keys tensor
+        :type keys: torch.Tensor
+        :param queries: Queries tensor
+        :type queries: torch.Tensor
+        :param mask: Optional Mask, defaults to None
+        :type mask: torch.Tensor, optional
+        :raises ValueError: Embed dimension mismatch (queries and keys)
+        :raises ValueError: Sequence lenght mistach (keys and values)
+        :return: Multi-Headed SelfAttention values
+        :rtype: torch.Tensor
+        """
         # validate dimensions:
-        assert values.shape[-1] == self.embed_size, "values dim must match embed size"
-        assert keys.shape[-1] == self.embed_size, "keys dim must match embed size"
-        assert queries.shape[-1] == self.embed_size, "queries dim must match embed size"
-        assert (
-            values.shape[-2] == keys.shape[-2]
-        ), "values and keys must have same sequence length"
+        # 1) Q x K.t -> energy (q_seq_len, k_seq_len)
+        if queries.shape[-1] != keys.shape[-1]:
+            raise ValueError(
+                f"queries and keys embed dimension mismatch.\nqueries: {queries.shape[-1]}\nkeys: {keys.shape[-1]}\n"
+            )
+
+        # 2) energy x V -> (q_seq_len, v_embed_dim)
+        if keys.shape[-2] != values.shape[-2]:
+            raise ValueError(
+                f"keys and values sequence length mismatch.\nkeys: {keys.shape[-2]}\nvalues: {values.shape[-2]}\n"
+            )
 
         # Get input shapes
-        B = queries.shape[0]  # Size of batch
+        B = queries.shape[0]  # Batch size
         v_len, k_len, q_len = (
-            values.shape[1],
-            keys.shape[1],
-            queries.shape[1],
-        )  # Sequence length for each
+            torch.tensor(values.shape[1]),
+            torch.tensor(keys.shape[1]),
+            torch.tensor(queries.shape[1]),
+        )  # Sequence lengths
 
         # Project
         keys = self.keys_proj(keys)
@@ -56,21 +77,22 @@ class SelfAttention(torch.nn.Module):
         keys = keys.reshape(B, k_len, self.heads, self.head_dim)
         queries = queries.reshape(B, q_len, self.heads, self.head_dim)
 
-        # torch.einsum convenient way to perform bmm between query and key
-        # across each sample and each head
+        # Perform multi-head attention
         energy = torch.einsum(
             "bqhd,bkhd->bhqk", queries, keys
         )  # Output shape (B, heads, q_len, k_len)
-        energy = energy / (q_len ** (1.0 / 2.0))
 
-        if mask:
+        energy = energy / torch.sqrt(k_len)
+
+        if mask is not None:
             energy = energy.masked_fill(mask == 0, float("1e-20"))
 
         energy = torch.softmax(energy, 3)
 
-        # Perform bmm between scaled energy and value (performs the reshapes)
-        scaledAttention = torch.einsum(
+        attention = torch.einsum(
             "bhqk,bvhd->bqhd", energy, values
         )  # Output shape (B, q_len, heads, head_dim)
 
-        return scaledAttention
+        attention = attention.reshape(B, q_len, self.embed_dim)
+
+        return attention
