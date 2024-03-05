@@ -1,1 +1,1 @@
-from .transformer import SelfAttention
+from .self_attention import SelfAttention

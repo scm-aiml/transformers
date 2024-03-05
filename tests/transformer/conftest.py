@@ -1,14 +1,14 @@
 import pytest
 import torch
-from src.transformer.transformer import SelfAttention
+from src.transformer.self_attention import SelfAttention
 
 @pytest.fixture
 def selfattention_params():
-    return {"embed_dim": 64, "heads": 8}
+    return {"embed_dim": 128, "heads": 8}
 
 
 @pytest.fixture
-def valid_tensors(selfattention_params):
+def valid_qkv_tensors(selfattention_params):
     batch_size = 3
     seq_length = 10
     tensor_shape = (batch_size, seq_length, selfattention_params["embed_dim"])
