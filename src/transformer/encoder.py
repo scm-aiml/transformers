@@ -18,6 +18,7 @@ class EncoderLayer(nn.Module):
         # Second Layer
         self.feed_forwad = nn.Sequential(
             nn.Linear(self.embed_dim, self.embed_dim * self.forwardExpand),
+            nn.ReLU(),
             nn.Linear(self.embed_dim * self.forwardExpand, self.embed_dim),
         )
         self.layernorm2 = nn.LayerNorm(self.embed_dim)

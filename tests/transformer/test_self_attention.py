@@ -1,6 +1,6 @@
 import pytest
 import torch
-from src.transformer.self_attention import SelfAttention
+from src.transformer import SelfAttention
 
 def test_valid_construction(self_attention):
     assert isinstance(

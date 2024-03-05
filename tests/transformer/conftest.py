@@ -1,6 +1,6 @@
 import pytest
 import torch
-from src.transformer.self_attention import SelfAttention
+from src.transformer import SelfAttention, EncoderLayer
 
 @pytest.fixture
 def selfattention_params():
@@ -29,3 +29,15 @@ def valid_qkv_tensors(selfattention_params):
 @pytest.fixture
 def self_attention(selfattention_params):
     return SelfAttention(**selfattention_params)
+
+@pytest.fixture()
+def encoder_layer_params(selfattention_params):
+    params = selfattention_params
+    params["forwardExpand"] = 2
+    params["dropout"] = 0.1
+    return params
+
+@pytest.fixture()
+def encoder_layer(encoder_layer_params):
+    return EncoderLayer(**encoder_layer_params)
+    
