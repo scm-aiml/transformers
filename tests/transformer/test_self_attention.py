@@ -27,4 +27,4 @@ def test_dimension_mismatch(self_attention, valid_qkv_tensors):
 def test_mask(self_attention, valid_qkv_tensors):
     values, keys, queries, mask = valid_qkv_tensors
     out: torch.Tensor = self_attention(values, keys, queries, mask)
-    assert(out.shape==queries.shape), "Output shape of SelAttention forward pass incorrect"
+    assert(out.shape==queries.shape), "Output shape of Self Attention forward pass incorrect"

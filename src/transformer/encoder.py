@@ -10,7 +10,7 @@ class EncoderLayer(nn.Module):
         self.heads = heads
         self.dropout = nn.Dropout(dropout)
         self.forwardExpand = forwardExpand
-        
+
         # First sub-layer
         self.attn = SelfAttention(heads=self.heads, embed_dim=self.embed_dim)
         self.layernorm1 = nn.LayerNorm(self.embed_dim)
@@ -26,8 +26,29 @@ class EncoderLayer(nn.Module):
     def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor]=None) -> torch.Tensor:
         attention = self.attn(x, x, x, mask)
         x = self.layernorm1(self.dropout(attention) + x)
-        
+
         forward_output = self.feed_forwad(x) 
         x = self.layernorm2(x + self.dropout(forward_output))
+
+        return x
+
+class EncoderBlock(nn.Module):
+    def __init__(self, embed_dim: int, heads: int, forwardExpand: int, dropout: float, numLayers: int):
+        super(EncoderBlock, self).__init__()
+        self.embed_dim = embed_dim
+        self.heads = heads
+        self.forwadExpand = forwardExpand
+        self.dropout = dropout
+        self.numLayers = numLayers
+
+        self.encoders = nn.ModuleList(
+            [
+                EncoderLayer(self.embed_dim, self.heads, self.forwadExpand, self.dropout) for i in range(self.numLayers)
+            ]
+        )
+
+    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor]=None) -> torch.Tensor:
+        for encoder in self.encoders:
+            x = encoder(x, mask)
 
         return x

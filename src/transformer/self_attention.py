@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+from typing import Optional
 
 class SelfAttention(nn.Module):
     def __init__(self, embed_dim: int, heads: int, bias: bool = False):
@@ -30,7 +30,7 @@ class SelfAttention(nn.Module):
         values: torch.Tensor,
         keys: torch.Tensor,
         queries: torch.Tensor,
-        mask: torch.Tensor = None,
+        mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """_summary_
 
